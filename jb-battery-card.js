@@ -21,12 +21,11 @@ const simpleColors = {
 };
 
 class JbBatteryCard extends HTMLElement {
-    let;
-    colorMap = colors;
 
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
+        this.colorMap = colors;
     }
 
     setConfig(config) {
@@ -158,15 +157,15 @@ class JbBatteryCard extends HTMLElement {
         if (state === "charging" || state === "full") {
             statePart = "-charging";
         }
-        let numberValue = Number(value);
-        let level = Math.round(numberValue / 10) * 10;
+        
+        let level = +value;
         if (level <= 15) {
             return `mdi:battery${statePart}-outline`;
-        } else if (level <= 33) {
+        } else if (level <= 45) {
             return `mdi:battery${statePart}-low`;
-        } else if (level <= 66) {
+        } else if (level <= 80) {
             return `mdi:battery${statePart}-medium`;
-        } else if (level > 66) {
+        } else if (level > 80) {
             return `mdi:battery${statePart}-high`;
         } else {
             return `mdi:battery${statePart}`;
@@ -179,7 +178,7 @@ class JbBatteryCard extends HTMLElement {
             statePart = "-charging";
         }
 
-        let numberValue = Number(value);
+        let numberValue = +value;
         let level = Math.round(numberValue / 10) * 10;
         if (level < 100) {
             return `mdi:battery${statePart}-${level}`;
