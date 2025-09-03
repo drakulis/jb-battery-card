@@ -180,7 +180,9 @@ class JbBatteryCard extends HTMLElement {
 
         let numberValue = +value;
         let level = Math.round(numberValue / 10) * 10;
-        if (level < 100) {
+        if (level == 0) {
+            return `mdi:battery${statePart}-outline`;
+        } else if (level < 100) {
             return `mdi:battery${statePart}-${level}`;
         } else {
             if (state === "charging" || state === "full") {
