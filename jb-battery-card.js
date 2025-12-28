@@ -212,7 +212,7 @@ class JbBatteryCard extends HTMLElement {
         const root = this.shadowRoot;
 
         const config = this._config;
-        const entityState = this._getEntityStateValue(hass.states[config.entity], config.attribute);
+        const entityState = parseInt(this._getEntityStateValue(hass.states[config.entity], config.attribute), 10) || '-';
         const statusEntityState = this._getEntityStateValue(hass.states[config.status_entity], config.status_attribute);
 
         const changed = statusEntityState !== this._statusEntityState || entityState !== this._entityState;
