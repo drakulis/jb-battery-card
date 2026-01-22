@@ -46,6 +46,7 @@ class JbBatteryCard extends HTMLElement {
 
         // Optionaler Wert 1 (Entladeleistung)
         if (!cardConfig.value1_entity) cardConfig.value1_entity = null;
+        if (!cardConfig.value1_unit) cardConfig.value1_unit = '';
 
         // Entity 2 (optional)
         let entity2Parts = null;
@@ -55,6 +56,7 @@ class JbBatteryCard extends HTMLElement {
             if (entity2Parts.attribute) cardConfig.attribute2 = entity2Parts.attribute;
 
             if (!cardConfig.value2_entity) cardConfig.value2_entity = null;
+            if (!cardConfig.value2_unit) cardConfig.value2_unit = '';
         }
 
         const card = document.createElement("ha-card");
@@ -221,8 +223,12 @@ class JbBatteryCard extends HTMLElement {
 
         // Optionaler Wert 1 (Entladeleistung)
         if (config.value1_entity) {
-            const value1 = this._getEntityStateValue(hass.states[config.value1_entity]);
-            root.getElementById("value1").textContent = (value1 && value1 != 0) ? value1 : '';
+            let value1 = this._getEntityStateValue(hass.states[config.value1_entity]);
+            if (value1 && value1 != 0) {
+                root.getElementById("value1").textContent = `${value1} ${config.value1_unit || ''}`;
+            } else {
+                root.getElementById("value1").textContent = '';
+            }
         }
 
         // --- Batterie 2 ---
@@ -235,8 +241,12 @@ class JbBatteryCard extends HTMLElement {
 
             // Optionaler Wert 2 (Entladeleistung)
             if (config.value2_entity) {
-                const value2 = this._getEntityStateValue(hass.states[config.value2_entity]);
-                root.getElementById("value2").textContent = (value2 && value2 != 0) ? value2 : '';
+                let value2 = this._getEntityStateValue(hass.states[config.value2_entity]);
+                if (value2 && value2 != 0) {
+                    root.getElementById("value2").textContent = `${value2} ${config.value2_unit || ''}`;
+                } else {
+                    root.getElementById("value2").textContent = '';
+                }
             }
         }
 
@@ -248,5 +258,5 @@ class JbBatteryCard extends HTMLElement {
     }
 }
 
-console.log("%c 🪫 jb-battery-card (2 Sensors + optional value) ", "background: #222; color: #bada55");
+console.log("%c 🪫 jb-battery-card (2 Sensors + optional value + unit) ", "background: #222; color: #bada55");
 customElements.define("jb-battery-card", JbBatteryCard);
