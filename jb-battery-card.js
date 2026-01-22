@@ -56,6 +56,9 @@ class JbBatteryCard extends HTMLElement {
         card.setAttribute("id", "card");
         card.setAttribute("aria-label", cardConfig.title);
 
+        // Dynamische Icon-Größe: 1 Batterie → 40%, 2 Batterien → 80%
+        const iconSize = cardConfig.entity2 ? '80%' : '40%';
+
         const style = document.createElement("style");
         style.textContent = `
           ha-card {
@@ -73,7 +76,7 @@ class JbBatteryCard extends HTMLElement {
           }
             
           ha-icon {
-              width: auto;
+              width: ${iconSize};
               height: auto;
               --mdc-icon-size: 100%;
           }
@@ -86,6 +89,7 @@ class JbBatteryCard extends HTMLElement {
           }
         `;
 
+        // HTML mit optionalen Titeln
         card.innerHTML = `
         <div class="battery-block" id="battery1">
             <ha-icon id="icon1" icon="mdi:battery"></ha-icon>
@@ -105,7 +109,6 @@ class JbBatteryCard extends HTMLElement {
         <mwc-ripple></mwc-ripple>
         `;
 
-
         card.appendChild(style);
 
         // Klick auf Batterie 1
@@ -122,6 +125,7 @@ class JbBatteryCard extends HTMLElement {
 
         root.appendChild(card);
 
+        // Farbskala
         if (cardConfig.colors) {
             this.colorMap = cardConfig.colors;
         } else if (cardConfig.variant == "simple") {
