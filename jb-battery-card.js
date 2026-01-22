@@ -44,12 +44,17 @@ class JbBatteryCard extends HTMLElement {
         cardConfig.entity = entityParts.entity;
         if (entityParts.attribute) cardConfig.attribute1 = entityParts.attribute;
 
+        // Optionaler Wert 1 (Entladeleistung)
+        if (!cardConfig.value1_entity) cardConfig.value1_entity = null;
+
         // Entity 2 (optional)
         let entity2Parts = null;
         if (cardConfig.entity2) {
             entity2Parts = this._splitEntityAndAttribute(cardConfig.entity2);
             cardConfig.entity2 = entity2Parts.entity;
             if (entity2Parts.attribute) cardConfig.attribute2 = entity2Parts.attribute;
+
+            if (!cardConfig.value2_entity) cardConfig.value2_entity = null;
         }
 
         const card = document.createElement("ha-card");
@@ -87,14 +92,21 @@ class JbBatteryCard extends HTMLElement {
               align-items: center;
               margin: 0 10px;
           }
+
+          .extra-value {
+              font-size: 0.9em;
+              color: var(--primary-text-color);
+              margin: 2px 0;
+          }
         `;
 
-        // HTML mit optionalen Titeln
+        // HTML mit optionalen Titeln und extra Wert
         card.innerHTML = `
         <div class="battery-block" id="battery1">
             <ha-icon id="icon1" icon="mdi:battery"></ha-icon>
             <div id="description1">
                 ${cardConfig.title1 ? `<span id="title1">${cardConfig.title1}</span>` : ''}
+                <span class="extra-value" id="value1"></span>
                 <span id="percent1">-</span>
             </div>
         </div>
@@ -103,6 +115,7 @@ class JbBatteryCard extends HTMLElement {
             <ha-icon id="icon2" icon="mdi:battery"></ha-icon>
             <div id="description2">
                 ${cardConfig.title2 ? `<span id="title2">${cardConfig.title2}</span>` : ''}
+                <span class="extra-value" id="value2"></span>
                 <span id="percent2">-</span>
             </div>
         </div>` : ''}
@@ -199,22 +212,32 @@ class JbBatteryCard extends HTMLElement {
         const root = this.shadowRoot;
         const config = this._config;
 
-        // Entity 1
+        // --- Batterie 1 ---
         const entityState1 = parseInt(this._getEntityStateValue(hass.states[config.entity], config.attribute1), 10) || '-';
         const statusEntityState1 = this._getEntityStateValue(hass.states[config.entity], config.status_attribute1);
-
         root.getElementById("percent1").textContent = `${entityState1}%`;
         root.getElementById("icon1").setAttribute("icon", this._computeBatteryIcon(entityState1, statusEntityState1));
         root.getElementById("icon1").style.color = this._computeColor(entityState1);
 
-        // Entity 2
+        // Optionaler Wert 1 (Entladeleistung)
+        if (config.value1_entity) {
+            const value1 = this._getEntityStateValue(hass.states[config.value1_entity]);
+            root.getElementById("value1").textContent = (value1 && value1 != 0) ? value1 : '';
+        }
+
+        // --- Batterie 2 ---
         if (config.entity2) {
             const entityState2 = parseInt(this._getEntityStateValue(hass.states[config.entity2], config.attribute2), 10) || '-';
             const statusEntityState2 = this._getEntityStateValue(hass.states[config.entity2], config.status_attribute2);
-
             root.getElementById("percent2").textContent = `${entityState2}%`;
             root.getElementById("icon2").setAttribute("icon", this._computeBatteryIcon(entityState2, statusEntityState2));
             root.getElementById("icon2").style.color = this._computeColor(entityState2);
+
+            // Optionaler Wert 2 (Entladeleistung)
+            if (config.value2_entity) {
+                const value2 = this._getEntityStateValue(hass.states[config.value2_entity]);
+                root.getElementById("value2").textContent = (value2 && value2 != 0) ? value2 : '';
+            }
         }
 
         root.lastChild.hass = hass;
@@ -225,5 +248,5 @@ class JbBatteryCard extends HTMLElement {
     }
 }
 
-console.log("%c 🪫 jb-battery-card (2 Sensors) ", "background: #222; color: #bada55");
+console.log("%c 🪫 jb-battery-card (2 Sensors + optional value) ", "background: #222; color: #bada55");
 customElements.define("jb-battery-card", JbBatteryCard);
