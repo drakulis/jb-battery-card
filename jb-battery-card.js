@@ -224,7 +224,9 @@ class JbBatteryCard extends HTMLElement {
 
         if (config.value1_entity) {
             const value1 = this._getEntityStateValue(hass.states[config.value1_entity]);
-            root.getElementById("value1").textContent = (value1 !== null && value1 !== undefined) ? `${value1} ${config.value1_unit || ''}` : '';
+            root.getElementById("value1").textContent = (value1 !== null && value1 !== undefined) 
+                ? `${Math.round(value1)} ${config.value1_unit || ''}` 
+                : '';
         }
 
         // --- Batterie 2 ---
@@ -238,7 +240,9 @@ class JbBatteryCard extends HTMLElement {
 
             if (config.value2_entity) {
                 const value2 = this._getEntityStateValue(hass.states[config.value2_entity]);
-                root.getElementById("value2").textContent = (value2 !== null && value2 !== undefined) ? `${value2} ${config.value2_unit || ''}` : '';
+                root.getElementById("value2").textContent = (value2 !== null && value2 !== undefined) 
+                    ? `${Math.round(value2)} ${config.value2_unit || ''}` 
+                    : '';
             }
         }
 
@@ -250,5 +254,5 @@ class JbBatteryCard extends HTMLElement {
     }
 }
 
-console.log("%c 🪫 jb-battery-card (2 Sensors + optional value + unit) ", "background: #222; color: #bada55");
+console.log("%c 🪫 jb-battery-card (2 Sensors + optional value + unit, integer display) ", "background: #222; color: #bada55");
 customElements.define("jb-battery-card", JbBatteryCard);
