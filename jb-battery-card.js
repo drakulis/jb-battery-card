@@ -90,7 +90,7 @@ class JbBatteryCard extends HTMLElement {
         <div class="battery-block" id="battery1">
             <ha-icon id="icon1" icon="mdi:battery"></ha-icon>
             <div id="description1">
-                <span id="title1">${cardConfig.title1 || 'Sensor 1'}</span> 
+                <span id="title1">${cardConfig.title1}</span> 
                 <span id="percent1">-</span>
             </div>
         </div>
@@ -98,7 +98,7 @@ class JbBatteryCard extends HTMLElement {
         <div class="battery-block" id="battery2">
             <ha-icon id="icon2" icon="mdi:battery"></ha-icon>
             <div id="description2">
-                <span id="title2">${cardConfig.title2 || 'Sensor 2'}</span> 
+                <span id="title2">${cardConfig.title2}</span> 
                 <span id="percent2">-</span>
             </div>
         </div>` : ''}
