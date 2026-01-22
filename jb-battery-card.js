@@ -72,7 +72,7 @@ class JbBatteryCard extends HTMLElement {
             --base-unit: ${cardConfig.scale};
             cursor: pointer;
             display: flex;
-            flex-direction: ${cardConfig.horizontal === false ? 'column' : 'row'};
+            flex-direction: row;
             align-items: center;
             text-align: center;
             padding: 4% 0px;
@@ -210,6 +210,15 @@ class JbBatteryCard extends HTMLElement {
         return entity.attributes ? entity.attributes[attribute] : null;
     }
 
+    // --- Funktion um Wert mit Pfeil anzuzeigen ---
+    _formatValueWithArrow(value) {
+        if (value === null || value === undefined) return '';
+        const rounded = Math.round(value);
+        if (rounded < 0) return `↑${Math.abs(rounded)}`;
+        if (rounded > 0) return `↓${rounded}`;
+        return `${rounded}`;
+    }
+
     set hass(hass) {
         const root = this.shadowRoot;
         const config = this._config;
@@ -225,7 +234,7 @@ class JbBatteryCard extends HTMLElement {
         if (config.value1_entity) {
             const value1 = this._getEntityStateValue(hass.states[config.value1_entity]);
             root.getElementById("value1").textContent = (value1 !== null && value1 !== undefined) 
-                ? `${Math.round(value1)} ${config.value1_unit || ''}` 
+                ? `${this._formatValueWithArrow(value1)}${config.value1_unit || ''}` 
                 : '';
         }
 
@@ -241,7 +250,7 @@ class JbBatteryCard extends HTMLElement {
             if (config.value2_entity) {
                 const value2 = this._getEntityStateValue(hass.states[config.value2_entity]);
                 root.getElementById("value2").textContent = (value2 !== null && value2 !== undefined) 
-                    ? `${Math.round(value2)} ${config.value2_unit || ''}` 
+                    ? `${this._formatValueWithArrow(value2)}${config.value2_unit || ''}` 
                     : '';
             }
         }
@@ -254,5 +263,5 @@ class JbBatteryCard extends HTMLElement {
     }
 }
 
-console.log("%c 🪫 jb-battery-card (2 Sensors + optional value + unit, integer display) ", "background: #222; color: #bada55");
+console.log("%c 🪫 jb-battery-card (2 Sensors + optional value + unit, arrows for +/-) ", "background: #222; color: #bada55");
 customElements.define("jb-battery-card", JbBatteryCard);
