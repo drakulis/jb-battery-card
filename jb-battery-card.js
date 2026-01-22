@@ -61,7 +61,7 @@ class JbBatteryCard extends HTMLElement {
 
         const card = document.createElement("ha-card");
         card.setAttribute("id", "card");
-        card.setAttribute("aria-label", cardConfig.title);
+        card.setAttribute("aria-label", cardConfig.title || "");
 
         // Dynamische Icon-Größe: 1 Batterie → 40%, 2 Batterien → 80%
         const iconSize = cardConfig.entity2 ? '80%' : '40%';
@@ -72,7 +72,7 @@ class JbBatteryCard extends HTMLElement {
             --base-unit: ${cardConfig.scale};
             cursor: pointer;
             display: flex;
-            flex-direction: row;
+            flex-direction: ${cardConfig.horizontal === false ? 'column' : 'row'};
             align-items: center;
             text-align: center;
             padding: 4% 0px;
@@ -176,7 +176,7 @@ class JbBatteryCard extends HTMLElement {
 
     _computeColor(stateValue) {
         let numberValue = Number(stateValue);
-        let colorLevels = Object.keys(this.colorMap).sort().reverse();
+        let colorLevels = Object.keys(this.colorMap).sort((a,b) => b-a);
         let key = colorLevels.find(key => numberValue >= key);
         return this.colorMap[key];
     }
@@ -205,9 +205,9 @@ class JbBatteryCard extends HTMLElement {
     }
 
     _getEntityStateValue(entity, attribute) {
-        if (!entity) return '-';
+        if (!entity) return null;
         if (!attribute) return entity.state;
-        return entity.attributes ? entity.attributes[attribute] : '-';
+        return entity.attributes ? entity.attributes[attribute] : null;
     }
 
     set hass(hass) {
@@ -215,38 +215,30 @@ class JbBatteryCard extends HTMLElement {
         const config = this._config;
 
         // --- Batterie 1 ---
-        const entityState1 = parseInt(this._getEntityStateValue(hass.states[config.entity], config.attribute1), 10) || '-';
+        const entityState1Raw = this._getEntityStateValue(hass.states[config.entity], config.attribute1);
+        const entityState1 = entityState1Raw !== null ? parseInt(entityState1Raw, 10) : '-';
         const statusEntityState1 = this._getEntityStateValue(hass.states[config.entity], config.status_attribute1);
         root.getElementById("percent1").textContent = `${entityState1}%`;
         root.getElementById("icon1").setAttribute("icon", this._computeBatteryIcon(entityState1, statusEntityState1));
         root.getElementById("icon1").style.color = this._computeColor(entityState1);
 
-        // Optionaler Wert 1 (Entladeleistung)
         if (config.value1_entity) {
-            let value1 = this._getEntityStateValue(hass.states[config.value1_entity]);
-            if (value1 && value1 != 0) {
-                root.getElementById("value1").textContent = `${value1} ${config.value1_unit || ''}`;
-            } else {
-                root.getElementById("value1").textContent = '';
-            }
+            const value1 = this._getEntityStateValue(hass.states[config.value1_entity]);
+            root.getElementById("value1").textContent = (value1 !== null && value1 !== undefined) ? `${value1} ${config.value1_unit || ''}` : '';
         }
 
         // --- Batterie 2 ---
         if (config.entity2) {
-            const entityState2 = parseInt(this._getEntityStateValue(hass.states[config.entity2], config.attribute2), 10) || '-';
+            const entityState2Raw = this._getEntityStateValue(hass.states[config.entity2], config.attribute2);
+            const entityState2 = entityState2Raw !== null ? parseInt(entityState2Raw, 10) : '-';
             const statusEntityState2 = this._getEntityStateValue(hass.states[config.entity2], config.status_attribute2);
             root.getElementById("percent2").textContent = `${entityState2}%`;
             root.getElementById("icon2").setAttribute("icon", this._computeBatteryIcon(entityState2, statusEntityState2));
             root.getElementById("icon2").style.color = this._computeColor(entityState2);
 
-            // Optionaler Wert 2 (Entladeleistung)
             if (config.value2_entity) {
-                let value2 = this._getEntityStateValue(hass.states[config.value2_entity]);
-                if (value2 && value2 != 0) {
-                    root.getElementById("value2").textContent = `${value2} ${config.value2_unit || ''}`;
-                } else {
-                    root.getElementById("value2").textContent = '';
-                }
+                const value2 = this._getEntityStateValue(hass.states[config.value2_entity]);
+                root.getElementById("value2").textContent = (value2 !== null && value2 !== undefined) ? `${value2} ${config.value2_unit || ''}` : '';
             }
         }
 
