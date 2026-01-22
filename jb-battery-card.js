@@ -73,7 +73,7 @@ class JbBatteryCard extends HTMLElement {
           }
             
           ha-icon {
-              width: 40%;
+              width: 80%;
               height: auto;
               --mdc-icon-size: 100%;
           }
