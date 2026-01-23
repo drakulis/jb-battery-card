@@ -1,12 +1,24 @@
 const LitElement = Object.getPrototypeOf(
   customElements.get("ha-panel-lovelace")
 );
+const html = LitElement.prototype.html;
+
+const colors = {
+  0: "#bf360c",
+  10: "#c04807",
+  20: "#ab5c10",
+  30: "#ad6b0d",
+  40: "#827717",
+  60: "#33691e",
+  80: "#1b5e20"
+};
 
 class JbBatteryCard extends HTMLElement {
 
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    this.colorMap = colors;
   }
 
   setConfig(config) {
@@ -14,8 +26,22 @@ class JbBatteryCard extends HTMLElement {
       throw new Error("Please define an entity");
     }
 
-    this._config = config;
-    this.shadowRoot.innerHTML = "";
+    const root = this.shadowRoot;
+    root.innerHTML = "";
+
+    const cardConfig = { ...config };
+
+    const entityParts = this._splitEntityAndAttribute(cardConfig.entity);
+    const statusEntityParts =
+      this._splitEntityAndAttribute(cardConfig.entity.replace("_level", "_state"));
+
+    cardConfig.entity = entityParts.entity;
+    cardConfig.status_entity = statusEntityParts.entity;
+
+    if (entityParts.attribute) cardConfig.attribute = entityParts.attribute;
+    if (statusEntityParts.attribute) cardConfig.status_attribute = statusEntityParts.attribute;
+
+    this._config = cardConfig;
 
     const card = document.createElement("ha-card");
 
@@ -25,8 +51,8 @@ class JbBatteryCard extends HTMLElement {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 12% 0;
+        justify-content: space-evenly;
+        padding: 8% 0;
         text-align: center;
         height: 100%;
       }
@@ -34,28 +60,24 @@ class JbBatteryCard extends HTMLElement {
       ha-icon {
         width: 40%;
         --mdc-icon-size: 100%;
-        margin-bottom: 6px;
       }
 
-      #text {
+      #description {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 2px;
       }
 
-      .line {
+      #title,
+      #value,
+      #soc {
         display: block;
         width: 100%;
       }
 
-      #title {
-        font-size: 0.9em;
-        opacity: 0.8;
-      }
-
-      #value {
-        font-size: 1.4em;
+      #value,
+      #soc {
         font-weight: bold;
       }
     `;
@@ -63,9 +85,10 @@ class JbBatteryCard extends HTMLElement {
     card.innerHTML = `
       <ha-icon id="icon" icon="mdi:battery"></ha-icon>
 
-      <div id="text">
-        <div id="title" class="line"></div>
-        <div id="value" class="line"></div>
+      <div id="description">
+        <div id="title"></div>
+        <div id="value"></div>
+        <div id="soc"></div>
       </div>
 
       <mwc-ripple></mwc-ripple>
@@ -74,10 +97,16 @@ class JbBatteryCard extends HTMLElement {
     card.appendChild(style);
 
     card.addEventListener("click", () => {
-      this._fire("hass-more-info", { entityId: config.entity });
+      this._fire("hass-more-info", { entityId: cardConfig.entity });
     });
 
-    this.shadowRoot.appendChild(card);
+    root.appendChild(card);
+  }
+
+  _splitEntityAndAttribute(entity) {
+    const parts = entity.split(".");
+    if (parts.length < 3) return { entity };
+    return { entity: parts.slice(0, -1).join("."), attribute: parts.at(-1) };
   }
 
   _fire(type, detail) {
@@ -86,26 +115,41 @@ class JbBatteryCard extends HTMLElement {
     this.shadowRoot.dispatchEvent(ev);
   }
 
+  _getEntityStateValue(entity, attribute) {
+    return attribute ? entity.attributes[attribute] : entity.state;
+  }
+
   set hass(hass) {
-    const cfg = this._config;
     const root = this.shadowRoot;
-    const stateObj = hass.states[cfg.entity];
-    if (!stateObj) return;
+    const cfg = this._config;
 
-    const raw = cfg.attribute
-      ? stateObj.attributes[cfg.attribute]
-      : stateObj.state;
+    const valueEntity = hass.states[cfg.entity];
+    const statusEntity = hass.states[cfg.status_entity];
+    if (!valueEntity || !statusEntity) return;
 
-    const unit = stateObj.attributes.unit_of_measurement || "";
-    const valueText = `${raw} ${unit}`.trim();
+    const valueRaw = this._getEntityStateValue(valueEntity, cfg.attribute);
+    const unit = valueEntity.attributes.unit_of_measurement || "";
+    const valueText = `${valueRaw} ${unit}`.trim();
 
-    // 🔒 JEDER WERT EIGENE ZEILE – KEIN INLINE MEHR
-    root.getElementById("title").textContent =
-      cfg.title || stateObj.attributes.friendly_name;
+    const socRaw =
+      this._getEntityStateValue(statusEntity, cfg.status_attribute);
 
+    root.getElementById("title").textContent = cfg.title;
     root.getElementById("value").textContent = valueText;
+    root.getElementById("soc").textContent = `${socRaw} %`;
+
+    const num = Number(socRaw);
+    if (!Number.isNaN(num)) {
+      const icon = root.getElementById("icon");
+      icon.style.color = this._computeColor(num);
+    }
 
     root.lastChild.hass = hass;
+  }
+
+  _computeColor(value) {
+    const keys = Object.keys(colors).map(Number).sort((a, b) => b - a);
+    return colors[keys.find(k => value >= k)] || "#999";
   }
 
   getCardSize() {
