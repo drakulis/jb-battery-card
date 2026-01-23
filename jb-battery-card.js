@@ -2,16 +2,6 @@ const LitElement = Object.getPrototypeOf(
   customElements.get("ha-panel-lovelace")
 );
 
-const colors = {
-  0: "#bf360c",
-  10: "#c04807",
-  20: "#ab5c10",
-  30: "#ad6b0d",
-  40: "#827717",
-  60: "#33691e",
-  80: "#1b5e20"
-};
-
 class JbBatteryCard extends HTMLElement {
 
   constructor() {
@@ -35,8 +25,8 @@ class JbBatteryCard extends HTMLElement {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: space-evenly;
-        padding: 10% 0;
+        justify-content: center;
+        padding: 12% 0;
         text-align: center;
         height: 100%;
       }
@@ -44,32 +34,40 @@ class JbBatteryCard extends HTMLElement {
       ha-icon {
         width: 40%;
         --mdc-icon-size: 100%;
+        margin-bottom: 6px;
       }
 
-      #description {
+      #text {
         display: flex;
         flex-direction: column;
         align-items: center;
+        gap: 2px;
+      }
+
+      .line {
+        display: block;
+        width: 100%;
       }
 
       #title {
         font-size: 0.9em;
-        opacity: 0.85;
+        opacity: 0.8;
       }
 
       #value {
         font-size: 1.4em;
         font-weight: bold;
-        display: block;
       }
     `;
 
     card.innerHTML = `
-      <ha-icon id="icon" icon="mdi:flash"></ha-icon>
-      <div id="description">
-        <div id="title"></div>
-        <div id="value"></div>
+      <ha-icon id="icon" icon="mdi:battery"></ha-icon>
+
+      <div id="text">
+        <div id="title" class="line"></div>
+        <div id="value" class="line"></div>
       </div>
+
       <mwc-ripple></mwc-ripple>
     `;
 
@@ -83,48 +81,31 @@ class JbBatteryCard extends HTMLElement {
   }
 
   _fire(type, detail) {
-    const event = new Event(type, {
-      bubbles: true,
-      composed: true
-    });
-    event.detail = detail;
-    this.shadowRoot.dispatchEvent(event);
+    const ev = new Event(type, { bubbles: true, composed: true });
+    ev.detail = detail;
+    this.shadowRoot.dispatchEvent(ev);
   }
 
   set hass(hass) {
+    const cfg = this._config;
     const root = this.shadowRoot;
-    const config = this._config;
-    const stateObj = hass.states[config.entity];
+    const stateObj = hass.states[cfg.entity];
     if (!stateObj) return;
 
-    const raw = config.attribute
-      ? stateObj.attributes[config.attribute]
+    const raw = cfg.attribute
+      ? stateObj.attributes[cfg.attribute]
       : stateObj.state;
 
     const unit = stateObj.attributes.unit_of_measurement || "";
     const valueText = `${raw} ${unit}`.trim();
 
-    // 🔴 ERZWUNGENER REFLOW (entscheidend!)
-    const valueEl = root.getElementById("value");
-    valueEl.textContent = "";
-    valueEl.offsetHeight; // <-- zwingt Browser zum Reflow
-    valueEl.textContent = valueText;
-
+    // 🔒 JEDER WERT EIGENE ZEILE – KEIN INLINE MEHR
     root.getElementById("title").textContent =
-      config.title || stateObj.attributes.friendly_name;
+      cfg.title || stateObj.attributes.friendly_name;
 
-    // Icon & Farbe nur wenn Zahl
-    const num = Number(raw);
-    if (!Number.isNaN(num)) {
-      root.getElementById("icon").style.color = this._computeColor(num);
-    }
+    root.getElementById("value").textContent = valueText;
 
     root.lastChild.hass = hass;
-  }
-
-  _computeColor(value) {
-    const keys = Object.keys(colors).map(Number).sort((a, b) => b - a);
-    return colors[keys.find(k => value >= k)] || "#999";
   }
 
   getCardSize() {
@@ -132,5 +113,4 @@ class JbBatteryCard extends HTMLElement {
   }
 }
 
-console.log("%c ⚡ jb-battery-card READY ", "background:#222;color:#bada55");
 customElements.define("jb-battery-card", JbBatteryCard);
