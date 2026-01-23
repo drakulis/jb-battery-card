@@ -12,19 +12,11 @@ const colors = {
   80: "#1b5e20"
 };
 
-const simpleColors = {
-  0: "#bf360c",
-  15: "#ad6b0d",
-  33: "#827717",
-  66: "#1b5e20"
-};
-
 class JbBatteryCard extends HTMLElement {
 
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this.colorMap = colors;
   }
 
   setConfig(config) {
@@ -32,27 +24,19 @@ class JbBatteryCard extends HTMLElement {
       throw new Error("Please define an entity");
     }
 
-    const root = this.shadowRoot;
-    root.innerHTML = "";
-
-    const cardConfig = { ...config };
-    if (!cardConfig.scale) cardConfig.scale = "50px";
-
-    const entityParts = this._splitEntityAndAttribute(cardConfig.entity);
-    cardConfig.entity = entityParts.entity;
-    if (entityParts.attribute) cardConfig.attribute = entityParts.attribute;
+    this._config = config;
+    this.shadowRoot.innerHTML = "";
 
     const card = document.createElement("ha-card");
 
     const style = document.createElement("style");
     style.textContent = `
       ha-card {
-        cursor: pointer;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: space-evenly;
-        padding: 8% 0;
+        padding: 10% 0;
         text-align: center;
         height: 100%;
       }
@@ -66,7 +50,6 @@ class JbBatteryCard extends HTMLElement {
         display: flex;
         flex-direction: column;
         align-items: center;
-        line-height: 1.25;
       }
 
       #title {
@@ -77,12 +60,12 @@ class JbBatteryCard extends HTMLElement {
       #value {
         font-size: 1.4em;
         font-weight: bold;
-        white-space: nowrap;
+        display: block;
       }
     `;
 
     card.innerHTML = `
-      <ha-icon id="icon" icon="mdi:battery"></ha-icon>
+      <ha-icon id="icon" icon="mdi:flash"></ha-icon>
       <div id="description">
         <div id="title"></div>
         <div id="value"></div>
@@ -93,18 +76,10 @@ class JbBatteryCard extends HTMLElement {
     card.appendChild(style);
 
     card.addEventListener("click", () => {
-      this._fire("hass-more-info", { entityId: cardConfig.entity });
+      this._fire("hass-more-info", { entityId: config.entity });
     });
 
-    root.appendChild(card);
-
-    this._config = cardConfig;
-  }
-
-  _splitEntityAndAttribute(entity) {
-    const parts = entity.split(".");
-    if (parts.length < 3) return { entity };
-    return { entity: parts.slice(0, -1).join("."), attribute: parts.at(-1) };
+    this.shadowRoot.appendChild(card);
   }
 
   _fire(type, detail) {
@@ -117,41 +92,39 @@ class JbBatteryCard extends HTMLElement {
   }
 
   set hass(hass) {
-    const config = this._config;
     const root = this.shadowRoot;
-
+    const config = this._config;
     const stateObj = hass.states[config.entity];
     if (!stateObj) return;
 
-    let rawValue = config.attribute
+    const raw = config.attribute
       ? stateObj.attributes[config.attribute]
       : stateObj.state;
 
-    const numberValue = Number(rawValue);
-    const isValidNumber = !Number.isNaN(numberValue);
-
     const unit = stateObj.attributes.unit_of_measurement || "";
+    const valueText = `${raw} ${unit}`.trim();
 
-    const displayValue = isValidNumber
-      ? `${numberValue} ${unit}`.trim()
-      : rawValue;
+    // 🔴 ERZWUNGENER REFLOW (entscheidend!)
+    const valueEl = root.getElementById("value");
+    valueEl.textContent = "";
+    valueEl.offsetHeight; // <-- zwingt Browser zum Reflow
+    valueEl.textContent = valueText;
 
     root.getElementById("title").textContent =
       config.title || stateObj.attributes.friendly_name;
 
-    root.getElementById("value").textContent = displayValue;
-
-    const icon = root.getElementById("icon");
-    if (isValidNumber) {
-      icon.style.color = this._computeColor(numberValue);
+    // Icon & Farbe nur wenn Zahl
+    const num = Number(raw);
+    if (!Number.isNaN(num)) {
+      root.getElementById("icon").style.color = this._computeColor(num);
     }
 
     root.lastChild.hass = hass;
   }
 
   _computeColor(value) {
-    const keys = Object.keys(this.colorMap).map(Number).sort((a, b) => b - a);
-    return this.colorMap[keys.find(k => value >= k)] || "#999";
+    const keys = Object.keys(colors).map(Number).sort((a, b) => b - a);
+    return colors[keys.find(k => value >= k)] || "#999";
   }
 
   getCardSize() {
@@ -159,5 +132,5 @@ class JbBatteryCard extends HTMLElement {
   }
 }
 
-console.log("%c 🔋 jb-battery-card loaded ", "background:#222;color:#bada55");
+console.log("%c ⚡ jb-battery-card READY ", "background:#222;color:#bada55");
 customElements.define("jb-battery-card", JbBatteryCard);
