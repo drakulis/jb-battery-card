@@ -1,160 +1,196 @@
 const LitElement = Object.getPrototypeOf(
-  customElements.get("ha-panel-lovelace")
+    customElements.get("ha-panel-lovelace")
 );
 const html = LitElement.prototype.html;
 
 const colors = {
-  0: "#bf360c",
-  10: "#c04807",
-  20: "#ab5c10",
-  30: "#ad6b0d",
-  40: "#827717",
-  60: "#33691e",
-  80: "#1b5e20"
+    0: "#bf360c",
+    10: "#c04807",
+    20: "#ab5c10",
+    30: "#ad6b0d",
+    40: "#827717",
+    60: "#33691e",
+    80: "#1b5e20"
+};
+
+const simpleColors = {
+    0: "#bf360c",
+    15: "#ad6b0d",
+    33: "#827717",
+    66: "#1b5e20"
 };
 
 class JbBatteryCard extends HTMLElement {
 
-  constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
-    this.colorMap = colors;
-  }
-
-  setConfig(config) {
-    if (!config.entity) {
-      throw new Error("Please define an entity");
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+        this.colorMap = colors;
     }
 
-    const root = this.shadowRoot;
-    root.innerHTML = "";
+    setConfig(config) {
+        if (!config.entity) {
+            throw new Error("Please define an entity");
+        }
 
-    const cardConfig = { ...config };
+        const root = this.shadowRoot;
+        if (root.lastChild) root.removeChild(root.lastChild);
 
-    const entityParts = this._splitEntityAndAttribute(cardConfig.entity);
-    const statusEntityParts =
-      this._splitEntityAndAttribute(cardConfig.entity.replace("_level", "_state"));
+        const cardConfig = Object.assign({}, config);
+        if (!cardConfig.scale) cardConfig.scale = "50px";
 
-    cardConfig.entity = entityParts.entity;
-    cardConfig.status_entity = statusEntityParts.entity;
+        const entityParts = this._splitEntityAndAttribute(cardConfig.entity);
+        const statusEntityParts = this._splitEntityAndAttribute(
+            cardConfig.entity.replace("_level", "_state")
+        );
 
-    if (entityParts.attribute) cardConfig.attribute = entityParts.attribute;
-    if (statusEntityParts.attribute) cardConfig.status_attribute = statusEntityParts.attribute;
+        cardConfig.entity = entityParts.entity;
+        cardConfig.status_entity = statusEntityParts.entity;
 
-    this._config = cardConfig;
+        if (entityParts.attribute) cardConfig.attribute = entityParts.attribute;
+        if (statusEntityParts.attribute) cardConfig.status_attribute = statusEntityParts.attribute;
 
-    const card = document.createElement("ha-card");
+        const card = document.createElement("ha-card");
+        card.setAttribute("id", "card");
+        card.setAttribute("aria-label", cardConfig.title);
 
-    const style = document.createElement("style");
-    style.textContent = `
-      ha-card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-evenly;
-        padding: 8% 0;
-        text-align: center;
-        height: 100%;
-      }
+        if (cardConfig.horizontal === true) {
+            card.classList.add("horizontal");
+        }
 
-      ha-icon {
-        width: 40%;
-        --mdc-icon-size: 100%;
-      }
+        const style = document.createElement("style");
+        style.textContent = `
+          ha-card {
+            --base-unit: ${cardConfig.scale};
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 4% 0px;
+            font-size: 16.8px;
+            box-sizing: border-box;
+            justify-content: space-evenly;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+          }
 
-      #description {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-      }
+          ha-icon {
+              width: 40%;
+              height: auto;
+              --mdc-icon-size: 100%;
+          }
 
-      #title,
-      #value,
-      #soc {
-        display: block;
-        width: 100%;
-      }
+          #description {
+              display: flex;
+              flex-direction: column;   /* 🔑 erzwingt Zeilen */
+              align-items: center;
+          }
 
-      #value,
-      #soc {
-        font-weight: bold;
-      }
-    `;
+          #title,
+          #percent {
+              display: block;           /* 🔑 kein Inline mehr */
+          }
 
-    card.innerHTML = `
-      <ha-icon id="icon" icon="mdi:battery"></ha-icon>
+          ha-card.horizontal {
+            flex-direction: row;
+            justify-content: space-evenly;
+          }
+        `;
 
-      <div id="description">
-        <div id="title"></div>
-        <div id="value"></div>
-        <div id="soc"></div>
-      </div>
+        // 🔧 HIER die entscheidende Änderung
+        card.innerHTML = `
+          <ha-icon id="icon" icon="mdi:battery"></ha-icon>
+          <div id="description">
+              <div id="title"></div>
+              <div id="percent"></div>
+          </div>
+          <mwc-ripple></mwc-ripple>
+        `;
 
-      <mwc-ripple></mwc-ripple>
-    `;
+        card.appendChild(style);
 
-    card.appendChild(style);
+        card.addEventListener("click", () => {
+            this._fire("hass-more-info", { entityId: cardConfig.entity });
+        });
 
-    card.addEventListener("click", () => {
-      this._fire("hass-more-info", { entityId: cardConfig.entity });
-    });
+        root.appendChild(card);
 
-    root.appendChild(card);
-  }
+        if (cardConfig.colors) {
+            this.colorMap = cardConfig.colors;
+        } else if (cardConfig.variant == "simple") {
+            this.colorMap = simpleColors;
+        } else {
+            this.colorMap = colors;
+        }
 
-  _splitEntityAndAttribute(entity) {
-    const parts = entity.split(".");
-    if (parts.length < 3) return { entity };
-    return { entity: parts.slice(0, -1).join("."), attribute: parts.at(-1) };
-  }
-
-  _fire(type, detail) {
-    const ev = new Event(type, { bubbles: true, composed: true });
-    ev.detail = detail;
-    this.shadowRoot.dispatchEvent(ev);
-  }
-
-  _getEntityStateValue(entity, attribute) {
-    return attribute ? entity.attributes[attribute] : entity.state;
-  }
-
-  set hass(hass) {
-    const root = this.shadowRoot;
-    const cfg = this._config;
-
-    const valueEntity = hass.states[cfg.entity];
-    const statusEntity = hass.states[cfg.status_entity];
-    if (!valueEntity || !statusEntity) return;
-
-    const valueRaw = this._getEntityStateValue(valueEntity, cfg.attribute);
-    const unit = valueEntity.attributes.unit_of_measurement || "";
-    const valueText = `${valueRaw} ${unit}`.trim();
-
-    const socRaw =
-      this._getEntityStateValue(statusEntity, cfg.status_attribute);
-
-    root.getElementById("title").textContent = cfg.title;
-    root.getElementById("value").textContent = valueText;
-    root.getElementById("soc").textContent = `${socRaw} %`;
-
-    const num = Number(socRaw);
-    if (!Number.isNaN(num)) {
-      const icon = root.getElementById("icon");
-      icon.style.color = this._computeColor(num);
+        this._config = cardConfig;
     }
 
-    root.lastChild.hass = hass;
-  }
+    _splitEntityAndAttribute(entity) {
+        let parts = entity.split(".");
+        if (parts.length < 3) {
+            return { entity: entity };
+        }
+        return { attribute: parts.pop(), entity: parts.join(".") };
+    }
 
-  _computeColor(value) {
-    const keys = Object.keys(colors).map(Number).sort((a, b) => b - a);
-    return colors[keys.find(k => value >= k)] || "#999";
-  }
+    _fire(type, detail, options) {
+        const node = this.shadowRoot;
+        const event = new Event(type, {
+            bubbles: true,
+            cancelable: false,
+            composed: true
+        });
+        event.detail = detail || {};
+        node.dispatchEvent(event);
+    }
 
-  getCardSize() {
-    return 1;
-  }
+    _computeColor(stateValue) {
+        let numberValue = Number(stateValue);
+        let colorLevels = Object.keys(this.colorMap).sort().reverse();
+        let key = colorLevels.find(key => numberValue >= key);
+        return this.colorMap[key];
+    }
+
+    _getEntityStateValue(entity, attribute) {
+        return attribute ? entity.attributes[attribute] : entity.state;
+    }
+
+    set hass(hass) {
+        const root = this.shadowRoot;
+        const config = this._config;
+
+        const entityState =
+            parseInt(this._getEntityStateValue(hass.states[config.entity], config.attribute), 10);
+
+        const statusEntityState =
+            this._getEntityStateValue(hass.states[config.status_entity], config.status_attribute);
+
+        root.getElementById("title").textContent = config.title;
+        root.getElementById("percent").textContent = `${entityState} %`;
+
+        const icon = root.getElementById("icon");
+        icon.setAttribute("icon", this._computeBatteryIcon(entityState, statusEntityState));
+        icon.style.color = this._computeColor(entityState);
+
+        root.lastChild.hass = hass;
+    }
+
+    _computeBatteryIcon(value, state) {
+        let statePart = (state === "charging" || state === "full") ? "-charging" : "";
+        let level = Math.round(value / 10) * 10;
+
+        if (level === 0) return `mdi:battery${statePart}-outline`;
+        if (level < 100) return `mdi:battery${statePart}-${level}`;
+        return statePart ? "mdi:battery-charging-100" : "mdi:battery";
+    }
+
+    getCardSize() {
+        return 1;
+    }
 }
 
+console.log("%c 🪫 jb-battery-card restored ", "background:#222;color:#bada55");
 customElements.define("jb-battery-card", JbBatteryCard);
