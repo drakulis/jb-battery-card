@@ -214,8 +214,8 @@ class JbBatteryCard extends HTMLElement {
     _formatValueWithArrow(value) {
         if (value === null || value === undefined) return '';
         const rounded = Math.round(value);
-        if (rounded < 0) return `↑${Math.abs(rounded)}`;
-        if (rounded > 0) return `↓${rounded}`;
+        if (rounded < 0) return `↓${Math.abs(rounded)}`;
+        if (rounded > 0) return `↑${rounded}`;
         return `${rounded}`;
     }
 
