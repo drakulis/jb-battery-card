@@ -30,7 +30,7 @@ class JbBatteryCard extends HTMLElement {
 
     setConfig(config) {
         if (!config.entity) {
-            throw new Error("Please define an entity");
+            throw new Error("Please define entity");
         }
 
         const root = this.shadowRoot;
@@ -39,74 +39,108 @@ class JbBatteryCard extends HTMLElement {
         const cardConfig = Object.assign({}, config);
         if (!cardConfig.scale) cardConfig.scale = "50px";
 
+        // Entity 1
         const entityParts = this._splitEntityAndAttribute(cardConfig.entity);
-        const statusEntityParts = this._splitEntityAndAttribute(cardConfig.entity.replace("_level", "_state"));
         cardConfig.entity = entityParts.entity;
-        cardConfig.status_entity = statusEntityParts.entity;
+        if (entityParts.attribute) cardConfig.attribute1 = entityParts.attribute;
 
-        if (entityParts.attribute) cardConfig.attribute = entityParts.attribute;
-        if (statusEntityParts.attribute) cardConfig.status_attribute = statusEntityParts.attribute;
+        // Optionaler Wert 1 (Entladeleistung)
+        if (!cardConfig.value1_entity) cardConfig.value1_entity = null;
+        if (!cardConfig.value1_unit) cardConfig.value1_unit = '';
+
+        // Entity 2 (optional)
+        let entity2Parts = null;
+        if (cardConfig.entity2) {
+            entity2Parts = this._splitEntityAndAttribute(cardConfig.entity2);
+            cardConfig.entity2 = entity2Parts.entity;
+            if (entity2Parts.attribute) cardConfig.attribute2 = entity2Parts.attribute;
+
+            if (!cardConfig.value2_entity) cardConfig.value2_entity = null;
+            if (!cardConfig.value2_unit) cardConfig.value2_unit = '';
+        }
 
         const card = document.createElement("ha-card");
         card.setAttribute("id", "card");
-        card.setAttribute("aria-label", cardConfig.title);
+        card.setAttribute("aria-label", cardConfig.title || "");
 
-        if (cardConfig.horizontal === true) {
-            card.classList.add("horizontal");
-        }
+        // Dynamische Icon-Größe: 1 Batterie → 40%, 2 Batterien → 80%
+        const iconSize = cardConfig.entity2 ? '80%' : '40%';
 
         const style = document.createElement("style");
         style.textContent = `
-      
           ha-card {
             --base-unit: ${cardConfig.scale};
             cursor: pointer;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             text-align: center;
             padding: 4% 0px;
             font-size: 16.8px;
             box-sizing: border-box;
-            justify-content: center;
             justify-content: space-evenly;
-            position: relative;
-            overflow: hidden;
             height: 100%;
           }
             
           ha-icon {
-              width: 40%;
+              width: ${iconSize};
               height: auto;
               --mdc-icon-size: 100%;
           }
           
-          #description {
+          .battery-block {
               display: flex;
               flex-direction: column;
+              align-items: center;
+              margin: 0 10px;
           }
-          
-          ha-card.horizontal {
-            flex-direction: row;
-            justify-content: space-evenly;
+
+          .extra-value {
+              font-size: 0.9em;
+              color: var(--primary-text-color);
+              margin: 2px 0;
           }
         `;
 
+        // HTML mit optionalen Titeln und extra Wert
         card.innerHTML = `
-        <ha-icon id="icon" icon="mdi:battery" style="margin-right: 0px"></ha-icon>
-        <div id="description">
-            <span id="title"></span> <span id="percent"></span>
+        <div class="battery-block" id="battery1">
+            <ha-icon id="icon1" icon="mdi:battery"></ha-icon>
+            <div id="description1">
+                ${cardConfig.title1 ? `<span id="title1">${cardConfig.title1}</span>` : ''}
+                <span class="extra-value" id="value1"></span>
+                <span id="percent1">-</span>
+            </div>
         </div>
+        ${cardConfig.entity2 ? `
+        <div class="battery-block" id="battery2">
+            <ha-icon id="icon2" icon="mdi:battery"></ha-icon>
+            <div id="description2">
+                ${cardConfig.title2 ? `<span id="title2">${cardConfig.title2}</span>` : ''}
+                <span class="extra-value" id="value2"></span>
+                <span id="percent2">-</span>
+            </div>
+        </div>` : ''}
         <mwc-ripple></mwc-ripple>
         `;
 
         card.appendChild(style);
-        card.addEventListener("click", event => {
+
+        // Klick auf Batterie 1
+        card.querySelector("#battery1").addEventListener("click", event => {
             this._fire("hass-more-info", { entityId: cardConfig.entity });
         });
 
+        // Klick auf Batterie 2
+        if (cardConfig.entity2) {
+            card.querySelector("#battery2").addEventListener("click", event => {
+                this._fire("hass-more-info", { entityId: cardConfig.entity2 });
+            });
+        }
+
         root.appendChild(card);
 
+        // Farbskala
         if (cardConfig.colors) {
             this.colorMap = cardConfig.colors;
         } else if (cardConfig.variant == "simple") {
@@ -123,7 +157,6 @@ class JbBatteryCard extends HTMLElement {
         if (parts.length < 3) {
             return { entity: entity };
         }
-
         return { attribute: parts.pop(), entity: parts.join(".") };
     }
 
@@ -143,90 +176,83 @@ class JbBatteryCard extends HTMLElement {
 
     _computeColor(stateValue) {
         let numberValue = Number(stateValue);
-        let colorLevels = Object.keys(this.colorMap).sort().reverse();
-        let key = colorLevels.find(key => {
-            if (numberValue >= key) {
-                return key;
-            }
-        });
+        let colorLevels = Object.keys(this.colorMap).sort((a,b) => b-a);
+        let key = colorLevels.find(key => numberValue >= key);
         return this.colorMap[key];
     }
 
     _computeBatteryIconSimple(value, state) {
-        let statePart = "";
-        if (state === "charging" || state === "full") {
-            statePart = "-charging";
-        }
-        
+        let statePart = (state === "charging" || state === "full") ? "-charging" : "";
         let level = +value;
-        if (level <= 15) {
-            return `mdi:battery${statePart}-outline`;
-        } else if (level <= 45) {
-            return `mdi:battery${statePart}-low`;
-        } else if (level <= 80) {
-            return `mdi:battery${statePart}-medium`;
-        } else if (level > 80) {
-            return `mdi:battery${statePart}-high`;
-        } else {
-            return `mdi:battery${statePart}`;
-        }
+        if (level <= 15) return `mdi:battery${statePart}-outline`;
+        if (level <= 45) return `mdi:battery${statePart}-low`;
+        if (level <= 80) return `mdi:battery${statePart}-medium`;
+        return `mdi:battery${statePart}-high`;
     }
 
     _computeBatteryIconDetailed(value, state) {
-        let statePart = "";
-        if (state === "charging" || state === "full") {
-            statePart = "-charging";
-        }
-
+        let statePart = (state === "charging" || state === "full") ? "-charging" : "";
         let numberValue = +value;
         let level = Math.round(numberValue / 10) * 10;
-        if (level == 0) {
-            return `mdi:battery${statePart}-outline`;
-        } else if (level < 100) {
-            return `mdi:battery${statePart}-${level}`;
-        } else {
-            if (state === "charging" || state === "full") {
-                return `mdi:battery-charging-100`;
-            } else {
-                return `mdi:battery${statePart}`;
-            }
-        }
+        if (level == 0) return `mdi:battery${statePart}-outline`;
+        if (level < 100) return `mdi:battery${statePart}-${level}`;
+        return (state === "charging" || state === "full") ? `mdi:battery-charging-100` : `mdi:battery${statePart}`;
     }
 
     _computeBatteryIcon(value, state) {
-        if (this._config.variant == "simple") {
-            return this._computeBatteryIconSimple(value, state);
-        }
+        if (this._config.variant == "simple") return this._computeBatteryIconSimple(value, state);
         return this._computeBatteryIconDetailed(value, state);
     }
 
     _getEntityStateValue(entity, attribute) {
-        if (!attribute) {
-            return entity.state;
-        }
+        if (!entity) return null;
+        if (!attribute) return entity.state;
+        return entity.attributes ? entity.attributes[attribute] : null;
+    }
 
-        return entity.attributes[attribute];
+    // --- Funktion um Wert mit Pfeil anzuzeigen ---
+    _formatValueWithArrow(value) {
+        if (value === null || value === undefined) return '';
+        const rounded = Math.round(value);
+        if (rounded < 0) return `↑${Math.abs(rounded)}`;
+        if (rounded > 0) return `↓${rounded}`;
+        return `${rounded}`;
     }
 
     set hass(hass) {
         const root = this.shadowRoot;
-
         const config = this._config;
-        const entityState = parseInt(this._getEntityStateValue(hass.states[config.entity], config.attribute), 10) || '-';
-        const statusEntityState = this._getEntityStateValue(hass.states[config.status_entity], config.status_attribute);
 
-        const changed = statusEntityState !== this._statusEntityState || entityState !== this._entityState;
+        // --- Batterie 1 ---
+        const entityState1Raw = this._getEntityStateValue(hass.states[config.entity], config.attribute1);
+        const entityState1 = entityState1Raw !== null ? parseInt(entityState1Raw, 10) : '-';
+        const statusEntityState1 = this._getEntityStateValue(hass.states[config.entity], config.status_attribute1);
+        root.getElementById("percent1").textContent = `${entityState1}%`;
+        root.getElementById("icon1").setAttribute("icon", this._computeBatteryIcon(entityState1, statusEntityState1));
+        root.getElementById("icon1").style.color = this._computeColor(entityState1);
 
-        if (entityState !== this._entityState) {
-            root.getElementById("percent").textContent = `${entityState}%`;
-            root.getElementById("title").textContent = config.title;
-            this._entityState = entityState;
+        if (config.value1_entity) {
+            const value1 = this._getEntityStateValue(hass.states[config.value1_entity]);
+            root.getElementById("value1").textContent = (value1 !== null && value1 !== undefined) 
+                ? `${this._formatValueWithArrow(value1)}${config.value1_unit || ''}` 
+                : '';
         }
 
-        if (changed) {
-            root.getElementById("icon").setAttribute("icon", this._computeBatteryIcon(this._entityState, statusEntityState));
-            root.getElementById("icon").style.color = this._computeColor(this._entityState);
-            this._statusEntityState = statusEntityState;
+        // --- Batterie 2 ---
+        if (config.entity2) {
+            const entityState2Raw = this._getEntityStateValue(hass.states[config.entity2], config.attribute2);
+            const entityState2 = entityState2Raw !== null ? parseInt(entityState2Raw, 10) : '-';
+            const statusEntityState2 = this._getEntityStateValue(hass.states[config.entity2], config.status_attribute2);
+            root.getElementById("percent2").textContent = `${entityState2}%`;
+            root.getElementById("icon2").setAttribute("icon", this._computeBatteryIcon(entityState2, statusEntityState2));
+            root.getElementById("icon2").style.color = this._computeColor(entityState2);
+
+            if (config.value2_entity) {
+                const value2 = this._getEntityStateValue(hass.states[config.value2_entity]);
+                root.getElementById("value2").textContent = (value2 !== null && value2 !== undefined) 
+                    ? `${this._formatValueWithArrow(value2)}${config.value2_unit || ''}` 
+                    : '';
+            }
         }
 
         root.lastChild.hass = hass;
@@ -237,5 +263,5 @@ class JbBatteryCard extends HTMLElement {
     }
 }
 
-console.log("%c 🪫 jb-batter-card ", "background: #222; color: #bada55");
+console.log("%c 🪫 jb-battery-card (2 Sensors + optional value + unit, arrows for +/-) ", "background: #222; color: #bada55");
 customElements.define("jb-battery-card", JbBatteryCard);
