@@ -1,4 +1,4 @@
-⚠️ PULL REQUESTS ARE DISABLED ⚠️
+⚠️ **PULL REQUESTS ARE DISABLED** ⚠️
 
 Thank you for taking the time to open a pull request.
 
