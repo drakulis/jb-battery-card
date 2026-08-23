@@ -27,7 +27,7 @@ Home Assistant Batter Card
 ```yaml
 type: custom:jb-battery-card
 entity: sensor.blinds_1_battery_level
-# optional, if your device has dedicated charging state entity (eg Aquara blinds)
+# optional, if your device has dedicated charging state entity (eg Aqara blinds)
 charging_state_entity: binary_sensor.blinds_1_charging
 title: Realme
 horizontal: false
