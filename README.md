@@ -12,20 +12,23 @@ Home Assistant Batter Card
 
 ## Config
 
-| Name       | Type   | Default | Description                                                                            |
-|------------|--------|---------|----------------------------------------------------------------------------------------|
-| type       | string |         | custom:jb-battery-card                                                                 |
-| entity     | string |         | your entity id                                                                         |
-| title      | string |         | your device name                                                                       |
-| horizontal | bool   | false   | (optional) enable horizontal card layout                                               |
-| variant    | string |         | (optional) icons variant. At this moment can be set only to "simple" or not set at all |
-| colors     | object |         | (optional) color config for battery level                                              |
+| Name                  | Type   | Default | Description                                                                            |
+|-----------------------|--------|---------|----------------------------------------------------------------------------------------|
+| type                  | string |         | custom:jb-battery-card                                                                 |
+| entity                | string |         | your entity id                                                                         |
+| charging_state_entity | string |         | (optional) charging state entity of your device (if exists)                            |
+| title                 | string |         | your device name                                                                       |
+| horizontal            | bool   | false   | (optional) enable horizontal card layout                                               |
+| variant               | string |         | (optional) icons variant. At this moment can be set only to "simple" or not set at all |
+| colors                | object |         | (optional) color config for battery level                                              |
 
 ## Example
 
 ```yaml
 type: custom:jb-battery-card
-entity: sensor.rmx3085_battery_level_2
+entity: sensor.blinds_1_battery_level
+# optional, if your device has dedicated charging state entity (eg Aquara blinds)
+charging_state_entity: binary_sensor.blinds_1_charging
 title: Realme
 horizontal: false
 variant: simple

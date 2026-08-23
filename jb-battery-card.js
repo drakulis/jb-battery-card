@@ -20,6 +20,11 @@ const simpleColors = {
     66: "#1b5e20"
 };
 
+function jbLog(...txt) {
+    //console.log("jbLog", ...txt);
+}
+
+
 class JbBatteryCard extends HTMLElement {
 
     constructor() {
@@ -39,8 +44,13 @@ class JbBatteryCard extends HTMLElement {
         const cardConfig = Object.assign({}, config);
         if (!cardConfig.scale) cardConfig.scale = "50px";
 
+        cardConfig.charging_state_entity = cardConfig.charging_state_entity || cardConfig.entity.replace("_level", "_state");
+
+        jbLog("charging_state_entity", cardConfig.charging_state_entity);
+
         const entityParts = this._splitEntityAndAttribute(cardConfig.entity);
-        const statusEntityParts = this._splitEntityAndAttribute(cardConfig.entity.replace("_level", "_state"));
+        const statusEntityParts = this._splitEntityAndAttribute(cardConfig.charging_state_entity);
+
         cardConfig.entity = entityParts.entity;
         cardConfig.status_entity = statusEntityParts.entity;
 
@@ -66,7 +76,7 @@ class JbBatteryCard extends HTMLElement {
             align-items: center;
             text-align: center;
             padding: 4% 0px;
-            font-size: 16.8px;
+            font-size: min(3vw, 16.8px);
             box-sizing: border-box;
             justify-content: center;
             justify-content: space-evenly;
@@ -143,6 +153,9 @@ class JbBatteryCard extends HTMLElement {
 
     _computeColor(stateValue) {
         let numberValue = Number(stateValue);
+        if (isNaN(numberValue)) {
+          numberValue = 0;
+        }
         let colorLevels = Object.keys(this.colorMap).sort().reverse();
         let key = colorLevels.find(key => {
             if (numberValue >= key) {
@@ -154,10 +167,10 @@ class JbBatteryCard extends HTMLElement {
 
     _computeBatteryIconSimple(value, state) {
         let statePart = "";
-        if (state === "charging" || state === "full") {
+        if (state === "charging" || state === "full"|| state === "on") {
             statePart = "-charging";
         }
-        
+
         let level = +value;
         if (level <= 15) {
             return `mdi:battery${statePart}-outline`;
@@ -168,7 +181,7 @@ class JbBatteryCard extends HTMLElement {
         } else if (level > 80) {
             return `mdi:battery${statePart}-high`;
         } else {
-            return `mdi:battery${statePart}`;
+            return `mdi:battery-off-outline`;
         }
     }
 
@@ -188,7 +201,7 @@ class JbBatteryCard extends HTMLElement {
             if (state === "charging" || state === "full") {
                 return `mdi:battery-charging-100`;
             } else {
-                return `mdi:battery${statePart}`;
+                return `mdi:battery-off-outline`;
             }
         }
     }
@@ -218,7 +231,11 @@ class JbBatteryCard extends HTMLElement {
         const changed = statusEntityState !== this._statusEntityState || entityState !== this._entityState;
 
         if (entityState !== this._entityState) {
-            root.getElementById("percent").textContent = `${entityState}%`;
+            if (entityState == '-') {
+              root.getElementById("percent").textContent = `${entityState}`;
+            } else {
+              root.getElementById("percent").textContent = `${entityState}%`;
+            }
             root.getElementById("title").textContent = config.title;
             this._entityState = entityState;
         }
