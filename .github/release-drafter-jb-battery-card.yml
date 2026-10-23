@@ -1,7 +1,7 @@
 _extends: jb-battery-card:/.github/release-drafter.yml
-name-template: 'jb-battery-card-v$RESOLVED_VERSION'
-tag-template: 'jb-battery-card-v$RESOLVED_VERSION'
-tag-prefix: jb-battery-card-v
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+tag-prefix: 'v'
 include-paths:
   - "jb-battery-card.js"
   - "hacs.json"
