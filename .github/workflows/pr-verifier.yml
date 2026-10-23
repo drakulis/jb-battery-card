@@ -1,0 +1,65 @@
+name: Pull Request Verifier
+
+on:
+  - pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  verify-pr:
+    runs-on: ubuntu-latest
+
+    if: ${{ github.actor != 'dependabot[bot]' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Verify PR labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # set -x
+
+          REQUIRED_LABELS=("fix" "breaking-change" "feature" "chore" "docs" "test" "skip-changelog" "dependencies")
+          SEMVER_LABELS=("patch" "minor" "major")
+          labels=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" | jq -r '.labels[].name')
+
+          echo "Checking SEMVER_LABELS..."
+          declare -i SEMVER_LABELS_COUNT=0
+          for L in "${SEMVER_LABELS[@]}"; do
+            # Check if the label is present in LABELS
+            if [[ $labels == *"$L"* ]]; then
+              ((SEMVER_LABELS_COUNT+=1))
+            fi
+          done
+
+          if [[ $SEMVER_LABELS_COUNT -ne 1 ]]; then
+            echo "=================================================="
+            echo ""
+            echo "Error: Expected exactly one value from [$SEMVER_LABELS] to be present in LABELS, but found $SEMVER_LABELS_COUNT."
+            echo ""
+            echo "=================================================="
+            exit 1
+          fi
+
+          echo "Checking REQUIRED_LABELS..."
+          declare -i REQUIRED_LABELS_COUNT=0
+          for L in "${REQUIRED_LABELS[@]}"; do
+            if [[ $labels == *"$L"* ]]; then
+              echo "Found $L"
+              ((REQUIRED_LABELS_COUNT+=1))
+            fi
+          done
+
+          if [[ $REQUIRED_LABELS_COUNT -eq 0 ]]; then
+            echo "=================================================="
+            echo ""
+            echo "Error: Expected at least one value from [$REQUIRED_LABELS] to be present in LABELS, but found $REQUIRED_LABELS_COUNT."
+            echo ""
+            echo "=================================================="
+            exit 1
+          fi
+          exit 0
