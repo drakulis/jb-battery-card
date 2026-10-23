@@ -31,10 +31,11 @@ categories:
     semver-increment: "patch"
     when:
       label: "patch"
+  - type: "pre-exclude"
+    when:
+      label: "skip-changelog"
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&'
-exclude-labels:
-  - 'skip-changelog'
 template: |
   ## Changes
 
@@ -44,6 +45,7 @@ template: |
 
   Thanks to $CONTRIBUTORS for your contributions to this release!
 autolabeler:
-  - label: 'chore'
+  - labels: ['chore', 'patch']
     files:
       - '*.md'
+      - './github/*'
