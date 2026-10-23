@@ -1,0 +1,43 @@
+categories:
+  - title: '💥 Breaking Changes'
+    label: 'breaking-change'
+  - title: '🚀 Features'
+    label: 'feature'
+  - title: '🐛 Bug Fixes'
+    label: 'fix'
+  - title: '🧰 Maintenance'
+    labels:
+      - 'chore'
+      - 'docs'
+      - 'test'
+  - title: '⬆️ Dependencies'
+    collapse-after: 3
+    labels:
+      - 'dependencies'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&'
+exclude-labels:
+  - 'skip-changelog'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
+template: |
+  ## Changes
+
+  $CHANGES
+
+  ## Contributors
+
+  Thanks to $CONTRIBUTORS for your contributions to this release!
+autolabeler:
+  - label: 'chore'
+    files:
+      - '*.md'
