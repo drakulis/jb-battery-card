@@ -2,6 +2,9 @@ _extends: jb-battery-card:/.github/release-drafter.yml
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 tag-prefix: 'v'
-include-paths:
-  - "jb-battery-card.js"
-  - "hacs.json"
+categories:
+  - type: "pre-include"
+    when:
+      paths:
+        - "jb-battery-card.js"
+        - "hacs.json"
