@@ -1,19 +1,24 @@
 categories:
   - title: '💥 Breaking Changes'
-    label: 'breaking-change'
+    when:
+      label: 'breaking-change'
   - title: '🚀 Features'
-    label: 'feature'
+    when:
+      label: 'feature'
   - title: '🐛 Bug Fixes'
-    label: 'fix'
+    when:
+      label: 'fix'
   - title: '🧰 Maintenance'
-    labels:
-      - 'chore'
-      - 'docs'
-      - 'test'
+    when:
+      labels:
+        - 'chore'
+        - 'docs'
+        - 'test'
   - title: '⬆️ Dependencies'
     collapse-after: 3
-    labels:
-      - 'dependencies'
+    when:
+      labels:
+        - 'dependencies'
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&'
 exclude-labels:

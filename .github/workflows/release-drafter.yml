@@ -10,13 +10,9 @@ jobs:
   drafter:
     name: 'Draft releases'
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        component:
-          - jb-battery-card
     steps:
       - uses: release-drafter/release-drafter@v7.10.0
         with:
-          config-name: release-drafter-${{ matrix.component }}.yml
+          config-name: release-drafter-jb-battery-card.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
