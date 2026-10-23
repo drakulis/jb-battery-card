@@ -225,8 +225,19 @@ class JbBatteryCard extends HTMLElement {
         const root = this.shadowRoot;
 
         const config = this._config;
-        const entityState = parseInt(this._getEntityStateValue(hass.states[config.entity], config.attribute), 10) || '-';
-        const statusEntityState = this._getEntityStateValue(hass.states[config.status_entity], config.status_attribute);
+        const entityObj = hass.states[config.entity];
+        const statusEntityObj = hass.states[config.status_entity];
+        if (!entityObj) {
+            // Entity momentarily missing from hass.states (e.g. an integration
+            // reload/reconnect causes it to drop out of the states dict briefly).
+            // Previously this threw inside the hass setter ("Cannot read properties
+            // of undefined (reading 'state')"), which permanently wedges the card
+            // until the whole Lovelace view/page is reloaded. Skip this tick instead.
+            root.lastChild.hass = hass;
+            return;
+        }
+        const entityState = parseInt(this._getEntityStateValue(entityObj, config.attribute), 10) || '-';
+        const statusEntityState = statusEntityObj ? this._getEntityStateValue(statusEntityObj, config.status_attribute) : undefined;
 
         const changed = statusEntityState !== this._statusEntityState || entityState !== this._entityState;
 
