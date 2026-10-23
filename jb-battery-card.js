@@ -265,5 +265,5 @@ class JbBatteryCard extends HTMLElement {
     }
 }
 
-console.log("%c 🪫 jb-batter-card ", "background: #222; color: #bada55");
+console.log("%c 🪫 jb-batter-card ", "background: #221; color: #bada55");
 customElements.define("jb-battery-card", JbBatteryCard);
