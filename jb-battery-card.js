@@ -112,6 +112,15 @@ class JbBatteryCard extends HTMLElement {
 
         card.appendChild(style);
         card.addEventListener("click", event => {
+            // Optional tap_action override: { action: "toggle", entity: "switch.x" }
+            // calls switch.toggle on that entity instead of opening more-info.
+            // Falls back to more-info for any other/missing tap_action, same as before.
+            const tapAction = cardConfig.tap_action;
+            if (tapAction && tapAction.action === "toggle" && this._hass) {
+                const targetEntity = tapAction.entity || cardConfig.entity;
+                this._hass.callService(targetEntity.split(".")[0], "toggle", { entity_id: targetEntity });
+                return;
+            }
             this._fire("hass-more-info", { entityId: cardConfig.entity });
         });
 
@@ -223,6 +232,7 @@ class JbBatteryCard extends HTMLElement {
 
     set hass(hass) {
         const root = this.shadowRoot;
+        this._hass = hass;
 
         const config = this._config;
         const entityObj = hass.states[config.entity];
