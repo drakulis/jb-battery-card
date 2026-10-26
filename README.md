@@ -21,6 +21,7 @@ Home Assistant Batter Card
 | horizontal            | bool   | false   | (optional) enable horizontal card layout                                               |
 | variant               | string |         | (optional) icons variant. At this moment can be set only to "simple" or not set at all |
 | colors                | object |         | (optional) color config for battery level                                              |
+| tap_action            | object |         | (optional) override the default tap behavior (see below)                               |
 
 ## Example
 
@@ -61,3 +62,23 @@ colors:
 ```
 
 This way battery icon will always be gray no matter what is the battery level.
+
+## `tap_action`
+
+By default, tapping the card opens the more-info dialog for the card's `entity`. You can override this to instead toggle a different entity — handy when the battery icon also doubles as a control, e.g. a force-charge switch:
+
+```yaml
+type: custom:jb-battery-card
+entity: sensor.my_battery_soc
+variant: simple
+tap_action:
+  action: toggle
+  entity: switch.some_other_entity
+```
+
+| Name   | Type   | Default | Description                                                                 |
+|--------|--------|---------|------------------------------------------------------------------------------|
+| action | string |         | Only `toggle` is currently supported.                                        |
+| entity | string |         | Entity to call `toggle` on. Defaults to the card's own `entity` if omitted.   |
+
+If `tap_action` is absent, or `action` isn't `toggle`, tapping the card falls back to the original more-info behavior — this is fully backwards compatible.
